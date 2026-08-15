@@ -1,6 +1,5 @@
 import time
 
-
 def run_model(model, prompt):
     start = time.perf_counter()
 

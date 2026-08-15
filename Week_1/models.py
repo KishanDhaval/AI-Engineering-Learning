@@ -6,7 +6,6 @@ from langchain_mistralai import ChatMistralAI
 
 load_dotenv()
 
-
 def get_groq_model(
     temperature=0.2,
     top_p=1.0,
@@ -17,9 +16,7 @@ def get_groq_model(
         temperature=temperature,
         top_p=top_p,
         max_tokens=max_tokens,
-        api_key=os.getenv("GROQ_API_KEY"),
     )
-
 
 def get_mistral_model(
     temperature=0.2,
@@ -31,5 +28,4 @@ def get_mistral_model(
         temperature=temperature,
         top_p=top_p,
         max_tokens=max_tokens,
-        api_key=os.getenv("MISTRAL_API_KEY"),
     )
