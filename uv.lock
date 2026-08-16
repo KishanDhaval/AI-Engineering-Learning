@@ -692,7 +692,7 @@ wheels = [
 ]
 
 [[package]]
-name = "practicals"
+name = "ai-engineering"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
