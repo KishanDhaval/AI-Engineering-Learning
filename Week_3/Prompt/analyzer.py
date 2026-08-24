@@ -12,7 +12,7 @@ def analyze(review: str, prompt_name: str = "zero_shot", max_retries: int = 2) -
     for attempt in range(max_retries + 1):
         try:
             res = chain.invoke({"review": review})
-                return {"ok": True, **res.model_dump()
+            return {"ok": True, **res.model_dump()}
         except Exception as e:
             if attempt < max_retries:
                 time.sleep(1.0)
