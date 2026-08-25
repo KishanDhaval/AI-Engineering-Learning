@@ -22,7 +22,7 @@ prompt = ChatPromptTemplate.from_messages([
 def analyze_with_parser(review: str) -> dict: 
     chain = prompt | llm
     try : 
-        raw = chain.invoke({review})
+        raw = chain.invoke({"review": review})
         parsed = parser.parse(raw.content) 
         return parsed.model_dump()
     except Exception as e:
