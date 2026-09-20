@@ -17,6 +17,7 @@ dependencies = [
     "langchain-ollama>=1.1.0",
     "langchain-text-splitters>=1.1.2",
     "langchainhub>=0.1.21",
+    "langgraph>=1.2.11",
     "langsmith>=0.11.0",
     "notebook>=7.6.2",
     "pypdf>=6.16.2",
