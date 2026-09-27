@@ -1,0 +1,36 @@
+Sample Company HR Policy Handbook (Placeholder for POC)
+
+1. Notice Period
+All full-time employees must serve a notice period of 60 days upon
+resignation, regardless of role or tenure. Employees with less than six
+months of service may serve a reduced notice period of 30 days, subject to
+manager approval. During the notice period, employees remain eligible for
+all standard benefits and are expected to complete a formal knowledge
+transfer with their team.
+
+2. Leave Carry-Forward
+Employees accrue 18 days of paid annual leave per calendar year. Up to 10
+unused leave days may be carried forward into the following calendar year.
+Any unused leave beyond that cap is forfeited on December 31st and is not
+paid out, except in the case of confirmed medical leave, which is handled
+under a separate policy. Carried-forward leave must be used within the
+first six months of the new calendar year or it is forfeited.
+
+3. Leave and Notice Period Interaction
+Employees serving a notice period may use accrued and carried-forward leave
+during that period, subject to manager approval and adequate handover
+coverage. Leave taken during the notice period does not extend the notice
+period itself. Employees are encouraged to plan leave usage before
+submitting a resignation to avoid forfeiting accrued days.
+
+4. Remote Work
+Employees may work remotely up to two days per week with manager approval.
+Fully remote arrangements require director-level sign-off and are
+reviewed quarterly.
+
+5. Probation Period
+New hires undergo a 90-day probation period. During probation, the notice
+period for resignation or termination is reduced to 15 days.
+
+Note: This is placeholder content generated for a proof-of-concept exercise
+and does not reflect any real company's actual policy.
