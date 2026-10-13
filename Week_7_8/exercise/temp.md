@@ -10,3 +10,5 @@ memzero|
 https://mem0.ai/
 
 checkpoint ns id
+
+uv run mcp dev filename.py
