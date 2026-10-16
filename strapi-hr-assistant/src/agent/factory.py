@@ -3,7 +3,7 @@ from agent.tools import get_strapi_tools
 from langchain.agents import create_agent
 from langchain_google_genai import ChatGoogleGenerativeAI
 from config.settings import settings
-
+from langgraph.checkpoint.memory import MemorySaver
 
 
 async def build_agent():
@@ -25,6 +25,7 @@ async def build_agent():
         model = llm,
         system_prompt = HR_SYSTEM_PROMPT,
         tools = tools,
+        checkpointer=MemorySaver(), 
     )
 
     return agent
