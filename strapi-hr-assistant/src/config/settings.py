@@ -8,5 +8,6 @@ class Settings:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
     STRAPI_MCP_TOKEN = os.getenv("STRAPI_MCP_TOKEN")
     STRAPI_API_URL = os.getenv("STRAPI_API_URL")
+    DATABASE_URL = os.getenv("DATABASE_URL")
 
 settings = Settings()

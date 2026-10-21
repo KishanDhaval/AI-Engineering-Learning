@@ -1,29 +1,23 @@
+
+import asyncio
 import uuid
 
 import streamlit as st
 
-from agent.factory import build_agent
-from services.chat_service import ask_agent
-from utils.async_runner import run_async
-from utils.security import validate_question
+from services.chat_service import stream_answer
 
 
 st.set_page_config(
-    page_title="HR Assistant",
+    page_title="Strapi HR Assistant",
     page_icon="💼",
     layout="wide",
 )
 
 st.title("💼 Strapi HR Assistant")
-st.caption(
-    "Ask questions about jobs and applications in Strapi."
-)
+st.caption("Recruitment assistant powered by Strapi MCP and Gemini")
 
-
-# Initialize the agent once for this Streamlit session.
-if "agent" not in st.session_state:
-    with st.spinner("Connecting to Strapi MCP..."):
-        st.session_state.agent = run_async(build_agent())
+# Demo only. Replace with the ID from your authentication system.
+user_id = st.session_state.get("authenticated_user_id", "Test-User-1")
 
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = str(uuid.uuid4())
@@ -31,50 +25,64 @@ if "thread_id" not in st.session_state:
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
+with st.sidebar:
+    st.subheader("HR Assistant")
+    st.write("Ask about jobs, applications, and recruitment data.")
+
+    if st.button("New conversation"):
+        st.session_state.thread_id = str(uuid.uuid4())
+        st.session_state.chat_history = []
+        st.rerun()
 
 # Display previous messages.
 for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-
-# Get the next question.
-question = st.chat_input("Ask HR Assistant...")
+question = st.chat_input("Ask about jobs or applications...")
 
 if question:
-    try:
-        question = validate_question(question)
+    st.session_state.chat_history.append(
+        {"role": "user", "content": question}
+    )
 
-        st.session_state.chat_history.append(
-            {
-                "role": "user",
-                "content": question,
-            }
-        )
+    with st.chat_message("user"):
+        st.markdown(question)
 
-        with st.chat_message("user"):
-            st.markdown(question)
+    with st.chat_message("assistant"):
+        answer_box = st.empty()
+        answer_parts = []
 
-        with st.chat_message("assistant"):
-            with st.spinner("Analyzing Strapi data..."):
-                answer = run_async(
-                    ask_agent(
-                        agent=st.session_state.agent,
-                        question=question,
-                        thread_id=st.session_state.thread_id,
-                    )
-                )
+        with st.expander("Agent activity", expanded=True):
+            activity_box = st.container()
 
-            st.markdown(answer)
+        async def run_stream():
+            with activity_box:
+                async for event in stream_answer(
+                    question=question,
+                    thread_id=st.session_state.thread_id,
+                    user_id=user_id,
+                ):
+                    if event["type"] == "token":
+                        answer_parts.append(event["content"])
+                        answer_box.markdown("".join(answer_parts))
 
-        st.session_state.chat_history.append(
-            {
-                "role": "assistant",
-                "content": answer,
-            }
-        )
+                    elif event["type"] == "tool_call":
+                        st.write(
+                            f"🔧 Calling tool: `{event['name']}`"
+                        )
 
-    except Exception as error:
-        st.error(
-            f"Unable to process the request: {error}"
-        )
+                    elif event["type"] == "tool_result":
+                        st.write(
+                            f"✅ Tool completed: `{event['name']}`"
+                        )
+
+        asyncio.run(run_stream())
+
+    answer_text = "".join(answer_parts)
+
+    if answer_text:
+        st.session_state.chat_history.append({
+            "role": "assistant",
+            "content": answer_text,
+        })
