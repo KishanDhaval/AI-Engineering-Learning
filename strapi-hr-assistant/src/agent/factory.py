@@ -60,17 +60,17 @@ async def build_agent(checkpointer, store, user_id):
 
         return await save_preferences(store, user_id, changes)
 
-    model = ChatGoogleGenerativeAI(
-        model="gemini-3.5-flash",
-        google_api_key=settings.GEMINI_API_KEY,
-        temperature=0,
-    )
-    
-    # model = ChatGroq(
-    #     model="openai/gpt-oss-120b",
-    #     google_api_key=settings.GROQ_API_KEY,
+    # model = ChatGoogleGenerativeAI(
+    #     model="gemini-3.5-flash",
+    #     google_api_key=settings.GEMINI_API_KEY,
     #     temperature=0,
     # )
+
+    model = ChatGroq(
+        model="openai/gpt-oss-120b",
+        groq_api_key=settings.GROQ_API_KEY,
+        temperature=0,
+    )
 
     preferences = await get_preferences(store, user_id)
 

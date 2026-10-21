@@ -12,3 +12,6 @@
 - session management(short term storage)
 - thread management(chat history management)
 - Human in the loop (status update/ job application create/ taking approval on generated job description/ resume read)
+
+
+jev for tools filtering (research)
