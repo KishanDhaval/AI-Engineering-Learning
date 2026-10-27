@@ -7,6 +7,7 @@ load_dotenv()
 class Settings: 
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
     STRAPI_MCP_TOKEN: str = os.getenv("STRAPI_MCP_TOKEN", "")
     STRAPI_API_URL: str = os.getenv("STRAPI_API_URL", "")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
