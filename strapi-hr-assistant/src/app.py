@@ -10,14 +10,24 @@ from services.chat_service import (
     load_thread_state,
 )
 
-# Friendly display names for internal tool actions
+# Friendly display names and descriptions for internal tool actions
 ACTION_LABELS = {
-    "update_job-application": "Update Candidate Application Status",
-    "update_job-opening": "Update Job Vacancy Posting",
+    "update_job-application": "Update Candidate Application Stage",
+    "update_job-opening": "Update Job Vacancy Details",
     "create_job-opening": "Publish New Job Vacancy",
+    "publish_job-opening": "Publish Job Vacancy (Make Live)",
+    "unpublish_job-opening": "Unpublish Job Vacancy (Take Offline)",
     "discard_job-opening_draft": "Discard Job Draft",
     "get_user_preferences": "Check Saved Preferences",
     "remember_hr_preferences": "Save User Preference",
+}
+
+ACTION_DESCRIPTIONS = {
+    "publish_job-opening": "Publish this vacancy to the official Innvonix Careers portal so candidates can view and apply.",
+    "unpublish_job-opening": "Take this job posting offline from the careers portal without deleting it.",
+    "discard_job-opening_draft": "Permanently discard this unpublished job draft from the system.",
+    "update_job-opening": "Apply the requested adjustments to this job vacancy in the recruitment system.",
+    "update_job-application": "Update the candidate's stage in the hiring pipeline.",
 }
 
 
@@ -29,6 +39,29 @@ st.set_page_config(
 
 st.title("Innvonix Careers Hub")
 st.caption("AI Talent Acquisition & Recruitment Copilot for Innvonix")
+
+# ── Custom Styling: Right-align User Chat Messages ───────────────────────
+st.markdown(
+    """
+    <style>
+    /* Reverse flex direction so user avatar and message align to the right */
+    .stChatMessage:has([data-testid="stChatMessageAvatarUser"]) {
+        flex-direction: row-reverse;
+        text-align: right;
+    }
+
+    /* Align text content to the right */
+    .stChatMessage:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] {
+        text-align: right;
+    }
+
+    .stChatMessage:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] p {
+        text-align: right;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Demo user ID (can be mapped to real authentication)
 user_id = st.session_state.get("authenticated_user_id", "Test-User-1")
@@ -203,7 +236,7 @@ if st.session_state.pending_interrupt:
                 label_visibility="collapsed",
             )
             if st.button("❌ Cancel Posting", key="reject_job"):
-                asyncio.run(_do_resume({"action": "reject", "reason": reject_reason or "Cancelled by user"}))
+                asyncio.run(_do_resume({"action": "reject", "reason": reject_reason or "Cancelled by you"}))
 
     # ── Generic Action Approval UI (Key:Value layout) ────────────────────
     elif payload.get("type") == "action_approval":
@@ -211,14 +244,32 @@ if st.session_state.pending_interrupt:
 
         for action in payload.get("actions", []):
             tool_name = action.get("tool", "")
-            friendly_name = ACTION_LABELS.get(tool_name, tool_name)
+            friendly_name = ACTION_LABELS.get(tool_name, tool_name.replace("_", " ").title())
+            description = ACTION_DESCRIPTIONS.get(tool_name, "")
             args = action.get("args", {})
             doc_id = args.get("documentId", "N/A")
             data = args.get("data", {})
+            target_info = action.get("target_info", {})
 
             with st.container(border=True):
-                st.markdown(f"**Action:** {friendly_name}")
-                st.markdown(f"**Reference ID:** `{doc_id}`")
+                st.markdown(f"#### ⚙️ {friendly_name}")
+                if description:
+                    st.caption(description)
+
+                # Show friendly target entity if resolved
+                target_title = target_info.get("title") or target_info.get("fullName")
+                if target_title:
+                    dept = target_info.get("department") or target_info.get("position")
+                    loc = target_info.get("location")
+                    details_str = f"**Target Role / Candidate:** `{target_title}`"
+                    if dept:
+                        details_str += f" ({dept})"
+                    if loc:
+                        details_str += f" • {loc}"
+                    st.markdown(details_str)
+                else:
+                    st.markdown(f"**Reference ID:** `{doc_id}`")
+
                 if data:
                     st.markdown("**Proposed Changes:**")
                     for k, v in data.items():
@@ -237,7 +288,7 @@ if st.session_state.pending_interrupt:
                 label_visibility="collapsed",
             )
             if st.button("❌ Cancel Action", key="reject_action"):
-                asyncio.run(_do_resume({"approved": False, "reason": reject_reason or "Cancelled by user"}))
+                asyncio.run(_do_resume({"approved": False, "reason": reject_reason or "Cancelled by you"}))
 
     st.divider()
 

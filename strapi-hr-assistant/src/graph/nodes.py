@@ -257,22 +257,50 @@ async def create_job_node(state, model) -> dict:
 
         # Case 4: Rejection / Cancellation
         else:
-            reason = user_response.get("reason", "Cancelled by HR admin")
+            reason = user_response.get("reason", "Cancelled by you")
             return {
                 "messages": [
                     ToolMessage(
                         tool_call_id=create_call["id"],
                         name=create_call["name"],
-                        content=f"Job creation was cancelled by HR admin. Reason: {reason}. Inform user.",
+                        content=f"The user cancelled this job creation. Reason: {reason}. Acknowledge directly to the user (e.g. 'Understood, I have cancelled the job posting as you requested.').",
                     )
                 ],
                 "pending_tool_calls": None,
             }
 
 
+def _resolve_record_info(doc_id: str, messages: list) -> dict:
+    """Find human-readable details (title, department, applicant name) for a documentId from history."""
+    if not doc_id:
+        return {}
+    for m in reversed(messages):
+        if getattr(m, "type", "") == "tool" or isinstance(m, ToolMessage):
+            content = getattr(m, "content", "")
+            raw_text = ""
+            if isinstance(content, str):
+                raw_text = content
+            elif isinstance(content, list) and content and isinstance(content[0], dict) and "text" in content[0]:
+                raw_text = content[0]["text"]
+
+            if not raw_text or not raw_text.startswith("{"):
+                continue
+            try:
+                data = json.loads(raw_text)
+                records = data.get("jobs", []) if "jobs" in data else data.get("applications", [])
+                if isinstance(records, dict):
+                    records = [records]
+                for r in records:
+                    if r.get("documentId") == doc_id:
+                        return r
+            except Exception:
+                continue
+    return {}
+
+
 # Node 3: approval_node 
 def approval_node(state) -> dict:
-    """Pause for HR approval on mutating actions (update, delete)."""
+    """Pause for HR approval on mutating actions (update, delete, publish)."""
     last = state["messages"][-1]
 
     calls_to_approve = [
@@ -302,17 +330,25 @@ def approval_node(state) -> dict:
                     "pending_tool_calls": None,
                 }
 
+    # Enrich actions with resolved entity details (title, name, department)
+    enriched_actions = []
+    for c in calls_to_approve:
+        doc_id = c.get("args", {}).get("documentId", "")
+        target_info = _resolve_record_info(doc_id, state["messages"])
+        enriched_actions.append({
+            "tool": c["name"],
+            "args": c.get("args", {}),
+            "target_info": target_info,
+        })
+
     # Pause for HR approval in UI
     user_response = interrupt({
         "type": "action_approval",
-        "actions": [
-            {"tool": c["name"], "args": c.get("args", {})}
-            for c in calls_to_approve
-        ],
+        "actions": enriched_actions,
     })
 
     approved = user_response.get("approved", False)
-    reason = user_response.get("reason", "Action cancelled by HR admin")
+    reason = user_response.get("reason", "Cancelled by you")
 
     if approved:
         return {"pending_tool_calls": calls_to_approve}
@@ -322,7 +358,7 @@ def approval_node(state) -> dict:
             ToolMessage(
                 tool_call_id=c["id"],
                 name=c["name"],
-                content=f"Action '{c['name']}' was rejected by HR admin. Reason: {reason}.",
+                content=f"The user cancelled this action. Reason: {reason}. Acknowledge directly to the user (e.g. 'Understood, I have cancelled the action as you requested.').",
             )
             for c in calls_to_approve
         ],
