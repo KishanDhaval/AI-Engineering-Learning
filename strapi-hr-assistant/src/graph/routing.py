@@ -10,9 +10,9 @@ from langchain_core.messages import AIMessage
 # If Strapi adds new tools, prefix rules auto-classify them.
 # Unknown tools always fall to "approval" (safest default).
 
-READ_PREFIXES = ("get_", "list_", "log", "remember_hr_preferences")
+READ_PREFIXES = ("get_", "list_", "log", "remember_hr_preferences", "get_user_preferences")
 CREATE_PREFIXES = ("create_",)
-APPROVAL_PREFIXES = ("update_", "discard_", "delete_", "publish_")
+APPROVAL_PREFIXES = ("update_", "discard_", "delete_", "publish_", "draft_")
 
 
 def classify_tool(name: str) -> str:
