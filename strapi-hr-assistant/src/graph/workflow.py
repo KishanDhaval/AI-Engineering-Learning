@@ -61,7 +61,7 @@ async def build_graph(checkpointer, store, user_id):
     preference_section = (
         f"\n\nCurrent User Preferences:\n{preferences}"
         if preferences
-        else "\n\nCurrent User Preferences: None set."
+        else " "
     )
     system_prompt = (
         HR_SYSTEM_PROMPT

@@ -5,6 +5,7 @@
 #   3. approval_node   → Pauses for HR approval on update/delete actions
 
 import json
+from typing import Optional
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.types import interrupt
 
@@ -90,10 +91,83 @@ Respond ONLY with a valid JSON object with two keys:
         return job_data, responsibilities
 
 
+
+def _pre_input_guardrail(messages: list) -> Optional[AIMessage]:
+    """Intercept candidate application requests and oversized inputs before LLM call."""
+    if not messages:
+        return None
+
+    last_msg = messages[-1]
+    # Only inspect human user messages
+    if not (isinstance(last_msg, HumanMessage) or getattr(last_msg, "type", "") in ("human", "user")):
+        return None
+
+    content = str(getattr(last_msg, "content", ""))
+
+    # Reject excessively long spam or injection attempts
+    if len(content) > 3000:
+        return AIMessage(
+            content="Your request exceeds the maximum allowed length (3,000 characters). Please provide a more concise inquiry."
+        )
+
+    return None
+
+
+# Tool Call Pruning & Sliding Window 
+def _prune_messages(messages: list, max_messages: int = 30) -> list:
+    """Trim old tool outputs to save tokens and apply a safe sliding window.
+
+    - The most recent message (if a ToolMessage) is kept full so the model can answer the current turn.
+    - Older ToolMessages have their bulky JSON replaced with lightweight receipts.
+    - Prevents orphaned tool calls if the sliding window cuts between an AIMessage and a ToolMessage.
+    """
+    if not messages:
+        return []
+
+    pruned = []
+    total = len(messages)
+    for i, msg in enumerate(messages):
+        # Keep the very last message untouched
+        if i == total - 1:
+            pruned.append(msg)
+            continue
+
+        # Evict bulky database payloads from older ToolMessages
+        if isinstance(msg, ToolMessage) or getattr(msg, "type", "") == "tool":
+            tool_name = getattr(msg, "name", "tool") or "tool"
+            tool_call_id = getattr(msg, "tool_call_id", "")
+            pruned.append(
+                ToolMessage(
+                    content=f"[Historical {tool_name} data was retrieved and processed]",
+                    name=tool_name,
+                    tool_call_id=tool_call_id,
+                )
+            )
+        else:
+            pruned.append(msg)
+
+    # Apply sliding window
+    windowed = pruned[-max_messages:]
+
+    # Avoid orphaned tool calls at the start of the window
+    while windowed and (isinstance(windowed[0], ToolMessage) or getattr(windowed[0], "type", "") == "tool"):
+        windowed.pop(0)
+
+    return windowed
+
+
 # Node 1: model_node 
 async def model_node(state, model, system_prompt: str) -> dict:
     """Run the LLM with conversation history and return its response."""
-    messages_to_send = [SystemMessage(content=system_prompt)] + state["messages"]
+    # Pillar 2: Pre-input guardrail check
+    blocked = _pre_input_guardrail(state["messages"])
+    if blocked:
+        return {"messages": [blocked]}
+
+    # Pillar 3: Prune old tool outputs & apply sliding window
+    prepared_messages = _prune_messages(state["messages"], max_messages=10)
+    messages_to_send = [SystemMessage(content=system_prompt)] + prepared_messages
+
     response = await model.ainvoke(messages_to_send)
     return {"messages": [response]}
 

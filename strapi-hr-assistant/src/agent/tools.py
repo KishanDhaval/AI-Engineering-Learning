@@ -38,7 +38,7 @@ class UpdateJobOpeningInput(BaseModel):
     data: UpdateJobData = Field(description="Fields to update (only include the fields being changed)")
 
 
-# ── Output Trimmer: Keep only relevant HR fields ───────────────────────
+# Output Trimmer: Keep only relevant HR fields
 def _trim_output(tool_name: str, raw_output):
     """Strip verbose metadata (HTML, audit timestamps, tracking) to save tokens."""
     try:
