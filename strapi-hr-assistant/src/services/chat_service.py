@@ -7,7 +7,7 @@ from graph.workflow import build_graph
 from integration.postgres_memory import open_memory
 
 
-async def stream_answer(question: str, thread_id: str, user_id: str):
+async def stream_answer(question: str, thread_id: str, user_id: str):    
     """Stream tokens, tool activity, and HITL interrupt events."""
     question = validate_question(question)
 
@@ -18,7 +18,16 @@ async def stream_answer(question: str, thread_id: str, user_id: str):
             user_id=user_id,
         )
 
-        config = {"configurable": {"thread_id": thread_id}}
+        config = {
+            "configurable": {"thread_id": thread_id},
+            "run_name": f"Innvonix HR Turn - {thread_id[:8]}",
+            "tags": ["innvonix-careers-hub", "recruitment", "chat"],
+            "metadata": {
+                "user_id": user_id,
+                "thread_id": thread_id,
+                "application": "Innvonix Careers Hub",
+            },
+        }
 
         async for mode, chunk in graph.astream(
             {
@@ -91,7 +100,18 @@ async def resume_graph(thread_id: str, user_id: str, user_response: dict):
             user_id=user_id,
         )
 
-        config = {"configurable": {"thread_id": thread_id}}
+        decision = str(user_response.get("action") or ("approved" if user_response.get("approved") else "rejected"))
+        config = {
+            "configurable": {"thread_id": thread_id},
+            "run_name": f"HITL Decision ({decision}) - {thread_id[:8]}",
+            "tags": ["innvonix-careers-hub", "hitl", "human-decision"],
+            "metadata": {
+                "user_id": user_id,
+                "thread_id": thread_id,
+                "decision": decision,
+                "application": "Innvonix Careers Hub",
+            },
+        }
 
         async for mode, chunk in graph.astream(
             Command(resume=user_response),

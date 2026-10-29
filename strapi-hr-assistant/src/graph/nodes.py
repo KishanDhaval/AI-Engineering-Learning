@@ -8,6 +8,7 @@ import json
 from typing import Optional
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.types import interrupt
+from langsmith import traceable
 
 from graph.routing import classify_tool
 
@@ -42,15 +43,24 @@ def _extract_job_data(args: dict) -> dict:
 
 
 # Helper: Generate Role Responsibilities 
+@traceable(name="generate_job_responsibilities")
 async def _generate_responsibilities(model, job_data: dict) -> list[str]:
-    """Draft 4-5 tailored responsibilities for the role using the LLM."""
-    prompt = (
-        f"Generate 4 to 5 concise, professional job responsibilities for:\n"
-        f"Role: {job_data.get('title')}\n"
-        f"Department: {job_data.get('department')}\n"
-        f"Experience: {job_data.get('experience')}\n\n"
-        f"Return ONLY bullet points, one per line starting with '- '."
-    )
+    """Draft 4-5 high-impact, professional responsibilities across 4 key pillars."""
+    prompt = f"""You are a senior recruitment specialist drafting comprehensive, professional job responsibilities for Innvonix.
+
+Role: {job_data.get('title')}
+Department: {job_data.get('department')}
+Experience Level: {job_data.get('experience')}
+
+Generate exactly 4 to 5 high-impact, professional responsibilities. Each bullet point MUST be detailed, substantive, and action-oriented (25-45 words), covering:
+1. Core Deliverables & Execution: Specific visual/technical deliverables, campaigns, and day-to-day asset creation.
+2. Systems & Quality Standards: Maintaining brand guidelines, design systems, reusable templates, and visual identity.
+3. Cross-Functional Collaboration: Working closely with marketing, product, and content teams to translate business requirements.
+4. Optimization & Multi-Platform Delivery: Adapting and optimizing assets for diverse digital formats, screen sizes, and performance.
+
+Format rules:
+- Return ONLY 4 to 5 bullet points starting with '- '.
+- Do NOT include markdown headers, introductory text, or extra commentary."""
     try:
         res = await model.ainvoke([HumanMessage(content=prompt)])
         lines = [
@@ -64,6 +74,7 @@ async def _generate_responsibilities(model, job_data: dict) -> list[str]:
 
 
 # Helper: Apply Natural Language Edits
+@traceable(name="apply_natural_language_edits")
 async def _apply_natural_language_edits(
     model, job_data: dict, responsibilities: list[str], feedback: str
 ) -> tuple[dict, list[str]]:
